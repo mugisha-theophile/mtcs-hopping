@@ -209,14 +209,62 @@
         @media (max-width: 991px) {
             .sidebar {
                 transform: translateX(-100%);
+                width: 250px;
             }
 
             .sidebar.active {
                 transform: translateX(0);
+                box-shadow: 20px 0 50px rgba(0,0,0,0.5);
             }
 
             .main-wrapper {
                 margin-left: 0;
+                padding: 1.5rem;
+            }
+
+            .sidebar-overlay {
+                display: block !important;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 1030;
+                backdrop-filter: blur(4px);
+            }
+
+            .sidebar-overlay.d-none {
+                display: none !important;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+            
+            .page-header .d-flex {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        .toggle-btn {
+            display: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            color: var(--bg-sidebar);
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 991px) {
+            .toggle-btn {
+                display: flex;
             }
         }
     </style>
@@ -274,6 +322,14 @@
     <!-- Main Content -->
     <main class="main-wrapper">
 
+        <!-- Mobile Header Bar -->
+        <div class="d-lg-none d-flex align-items-center mb-4">
+            <button class="toggle-btn" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <h5 class="fw-bold mb-0">Mtc ADMIN</h5>
+        </div>
+
         <!-- Tab: Overview -->
         <div id="tab-overview" class="tab-pane active">
             <div class="page-header">
@@ -281,16 +337,16 @@
                     <h1 class="header-title">Dashboard Overview</h1>
                     <p class="text-muted mb-0">Welcome back, Admin! Here's what's happening today.</p>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
                     <button class="btn btn-white border rounded-pill px-4 d-none d-md-block"
                         onclick="window.location.reload()">
                         <i class="bi bi-arrow-clockwise me-2"></i>Refresh
                     </button>
-                    <button class="btn btn-dark rounded-pill px-4" onclick="openProductModal()">
+                    <button class="btn btn-dark rounded-pill px-4 flex-grow-1 flex-md-grow-0" onclick="openProductModal()">
                         <i class="bi bi-plus-lg me-2"></i>Add Product
                     </button>
-                    <button class="btn btn-outline-dark rounded-pill px-4" onclick="openBlogModal()">
-                        <i class="bi bi-journal-text me-2"></i>New Post
+                    <button class="btn btn-primary rounded-pill px-4 flex-grow-1 flex-md-grow-0" style="background: var(--brand); border: none;" onclick="openBlogModal()">
+                        <i class="bi bi-journal-plus me-2"></i>New Post/Blog
                     </button>
                 </div>
             </div>
