@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Improved Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background-color: #343a40;
+            position: fixed;
+            transition: width 0.3s;
+        }
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar ul li {
+            padding: 15px;
+            color: white;
+        }
+        .content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .content.collapsed {
+            margin-left: 80px;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+            .content {
+                margin-left: 0;
+            }
+        }
+        .btn {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <ul>
+            <li>Dashboard</li>
+            <li>Products</li>
+            <li>Blogs</li>
+            <li>Orders</li>
+            <li>Settings</li>
+            <li><button id="toggleSidebar" class="btn">Toggle</button></li>
+        </ul>
+    </div>
+    <div class="content" id="content">
+        <h1>Admin Dashboard</h1>
+        <button class="btn" id="save">Save Changes</button>
+        <div id="loading" style="display:none;">Saving...</div>
+        <script>
+            document.getElementById('toggleSidebar').addEventListener('click', function() {
+                const sidebar = document.getElementById('sidebar');
+                const content = document.getElementById('content');
+                sidebar.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+            });
+            document.getElementById('save').addEventListener('click', function() {
+                const loading = document.getElementById('loading');
+                loading.style.display = 'block';
+                // Simulate saving process
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                    alert('Save complete!');
+                }, 2000);
+            });
+        </script>
+    </div>
+</body>
+</html>
