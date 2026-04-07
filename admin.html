@@ -235,10 +235,81 @@
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 1039; backdrop-filter: blur(4px); }
         .sidebar-overlay.active { display: block; }
 
+        /* PRODUCT CARD GRID */
+        .product-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .product-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: var(--transition);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .product-card-img {
+            width: 100%;
+            height: 150px;
+            background: var(--bg-body);
+            overflow: hidden;
+        }
+
+        .product-card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-card-body {
+            padding: 1rem;
+        }
+
+        .product-card-body h6 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            color: var(--text-dark);
+        }
+
+        .product-card-body p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0 0 0.75rem 0;
+        }
+
+        .product-card-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--brand);
+            margin-bottom: 0.75rem;
+        }
+
+        .product-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .product-card-actions .btn {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 1200px) {
             .main-content { padding: 2rem; }
             .stats-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+            .product-card-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
         }
 
         @media (max-width: 992px) {
@@ -250,9 +321,7 @@
             .page-header-right { width: 100%; }
             .page-header-right .btn { flex: 1; min-width: 120px; }
             .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-            .stat-card { padding: 1.5rem; gap: 1rem; }
-            .stat-icon { width: 50px; height: 50px; font-size: 1.5rem; }
-            .stat-content h2 { font-size: 1.75rem; }
+            .product-card-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
         }
 
         @media (max-width: 768px) {
@@ -289,6 +358,7 @@
             .modal-body { max-height: calc(100vh - 200px); }
             .toast-notification { right: 1rem; left: 1rem; bottom: 1rem; max-width: none; }
             .image-preview-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
+            .product-card-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
         }
 
         @media (max-width: 576px) {
@@ -313,6 +383,11 @@
             .upload-zone { padding: 1.5rem; }
             .upload-zone i { font-size: 2rem; }
             .image-preview-grid { grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 0.75rem; }
+            .product-card-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; }
+            .product-card-img { height: 100px; }
+            .product-card-body { padding: 0.75rem; }
+            .product-card-body h6 { font-size: 0.8rem; }
+            .product-card-price { font-size: 1rem; }
         }
     </style>
 </head>
@@ -341,7 +416,13 @@
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             <a href="#" class="nav-link" onclick="switchTab('products', this); return false;">
-                <i class="bi bi-box-seam"></i> Inventory
+                <i class="bi bi-box-seam"></i> All Products
+            </a>
+            <a href="#" class="nav-link" onclick="switchTab('featured', this); return false;">
+                <i class="bi bi-star-fill"></i> Featured
+            </a>
+            <a href="#" class="nav-link" onclick="switchTab('popular', this); return false;">
+                <i class="bi bi-fire"></i> Popular
             </a>
             <a href="#" class="nav-link" onclick="switchTab('blogs', this); return false;">
                 <i class="bi bi-journal-text"></i> News & Blog
@@ -388,6 +469,24 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon" style="background: #fdf2f8; color: #db2777;">
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h6>Featured</h6>
+                            <h2 id="stat-featured">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">
+                            <i class="bi bi-fire"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h6>Popular</h6>
+                            <h2 id="stat-popular">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fffbeb; color: #f59e0b;">
                             <i class="bi bi-journal-text"></i>
                         </div>
                         <div class="stat-content">
@@ -395,39 +494,27 @@
                             <h2 id="stat-blogs">0</h2>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">
-                            <i class="bi bi-truck"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h6>Total Orders</h6>
-                            <h2 id="stat-orders">0</h2>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #fffbeb; color: #f59e0b;">
-                            <i class="bi bi-people"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h6>Active Users</h6>
-                            <h2>12</h2>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Recent Activity -->
-                <div class="glass-card">
-                    <div class="card-header"><h5>Recent Activity</h5></div>
-                    <p style="color: var(--text-muted); text-align: center; padding: 2rem 0;">Your recent activities will appear here</p>
+                <!-- Featured Products Preview -->
+                <h5 style="margin: 2rem 0 1rem 0; font-weight: 700;">⭐ Featured Products</h5>
+                <div class="product-card-grid" id="featuredProductsPreview">
+                    <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No featured products</p>
+                </div>
+
+                <!-- Popular Products Preview -->
+                <h5 style="margin: 2rem 0 1rem 0; font-weight: 700;">🔥 Popular Products</h5>
+                <div class="product-card-grid" id="popularProductsPreview">
+                    <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No popular products</p>
                 </div>
             </div>
 
-            <!-- Products Tab -->
+            <!-- All Products Tab -->
             <div id="tab-products" class="tab-pane">
                 <div class="page-header">
                     <div class="page-header-left">
-                        <h1>Product Inventory</h1>
-                        <p>Manage your products and inventory levels.</p>
+                        <h1>All Products</h1>
+                        <p>Manage your complete product inventory.</p>
                     </div>
                     <div class="page-header-right">
                         <button class="btn btn-dark" onclick="openProductModal()"><i class="bi bi-plus-lg"></i> Add Product</button>
@@ -438,24 +525,36 @@
                     <input type="text" class="form-control" placeholder="🔍 Search products..." id="productSearch" oninput="filterProducts(this.value)">
                 </div>
 
-                <div class="glass-card">
-                    <div class="table-wrapper">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Category</th>
-                                    <th>Price</th>
-                                    <th>Featured</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="productsList">
-                                <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>Loading products...</td></tr>
-                            </tbody>
-                        </table>
+                <div class="product-card-grid" id="allProductsList">
+                    <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Loading products...</p>
+                </div>
+            </div>
+
+            <!-- Featured Products Tab -->
+            <div id="tab-featured" class="tab-pane">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>Featured Products</h1>
+                        <p>Products marked as Featured appear on the homepage.</p>
                     </div>
+                </div>
+
+                <div class="product-card-grid" id="featuredProductsList">
+                    <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No featured products</p>
+                </div>
+            </div>
+
+            <!-- Popular Products Tab -->
+            <div id="tab-popular" class="tab-pane">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <h1>Popular Products</h1>
+                        <p>Products marked as Popular appear in special section.</p>
+                    </div>
+                </div>
+
+                <div class="product-card-grid" id="popularProductsList">
+                    <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No popular products</p>
                 </div>
             </div>
 
@@ -488,7 +587,7 @@
                                 </tr>
                             </thead>
                             <tbody id="blogsList">
-                                <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="bi bi-newspaper" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>Loading blog posts...</td></tr>
+                                <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading blog posts...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -580,11 +679,11 @@
 
                         <!-- Sub Photos Upload -->
                         <div class="mb-3">
-                            <label class="form-label">Additional Product Photos</label>
+                            <label class="form-label">Additional Product Photos (Multiple)</label>
                             <div class="upload-zone" id="subPhotosZone" onclick="document.getElementById('subPhotosInput').click()">
                                 <i class="bi bi-images"></i>
                                 <p style="margin: 0; font-weight: 600; color: var(--text-dark);">Click to upload or drag and drop</p>
-                                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Upload multiple photos (up to 5MB each)</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Upload as many photos as you want (up to 5MB each)</p>
                             </div>
                             <input type="file" id="subPhotosInput" accept="image/*" multiple style="display: none;" onchange="handleSubPhotosUpload(event)">
                             <div id="subPhotosPreview" class="image-preview-grid"></div>
@@ -595,15 +694,15 @@
                             <div>
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="productFeatured">
-                                    <label class="form-check-label" for="productFeatured">Featured Product</label>
+                                    <label class="form-check-label" for="productFeatured">⭐ Featured Product (Shows on homepage)</label>
                                 </div>
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="productPopular">
-                                    <label class="form-check-label" for="productPopular">Popular Item</label>
+                                    <label class="form-check-label" for="productPopular">🔥 Popular Item (Shows in popular section)</label>
                                 </div>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="productOutOfStock">
-                                    <label class="form-check-label" for="productOutOfStock">Out of Stock</label>
+                                    <label class="form-check-label" for="productOutOfStock">Out of Stock (Hide from site)</label>
                                 </div>
                             </div>
                         </div>
@@ -689,7 +788,7 @@
         document.addEventListener('DOMContentLoaded', loadData);
         document.getElementById('sidebarOverlay').addEventListener('click', toggleSidebar);
 
-        // Drag and drop for main photo
+        // Drag and drop setup
         setupDragDrop('mainPhotoZone', 'mainPhotoInput');
         setupDragDrop('subPhotosZone', 'subPhotosInput');
         setupDragDrop('blogPhotoZone', 'blogPhotoInput');
@@ -739,10 +838,11 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     subPhotosBase64.push(e.target.result);
+                    const newIndex = subPhotosBase64.length - 1;
                     preview.innerHTML += `
                         <div class="preview-item">
-                            <img src="${e.target.result}" alt="Sub Photo ${index + 1}">
-                            <button type="button" class="remove-btn" onclick="removeSubPhoto(${index})"><i class="bi bi-x"></i></button>
+                            <img src="${e.target.result}" alt="Sub Photo">
+                            <button type="button" class="remove-btn" onclick="removeSubPhoto(${newIndex})"><i class="bi bi-x"></i></button>
                         </div>
                     `;
                 };
@@ -775,7 +875,7 @@
             subPhotosBase64.forEach((photo, idx) => {
                 preview.innerHTML += `
                     <div class="preview-item">
-                        <img src="${photo}" alt="Sub Photo ${idx + 1}">
+                        <img src="${photo}" alt="Sub Photo">
                         <button type="button" class="remove-btn" onclick="removeSubPhoto(${idx})"><i class="bi bi-x"></i></button>
                     </div>
                 `;
@@ -810,7 +910,9 @@
                 const [pRes, bRes] = await Promise.all([fetch('/api/products'), fetch('/api/blogs')]);
                 if (pRes.ok) {
                     products = await pRes.json();
-                    renderProducts();
+                    renderAllProducts();
+                    renderFeaturedProducts();
+                    renderPopularProducts();
                 }
                 if (bRes.ok) {
                     blogs = await bRes.json();
@@ -824,32 +926,109 @@
 
         function updateStats() {
             document.getElementById('stat-products').textContent = products.length;
+            document.getElementById('stat-featured').textContent = products.filter(p => p.isFeatured).length;
+            document.getElementById('stat-popular').textContent = products.filter(p => p.isPopular).length;
             document.getElementById('stat-blogs').textContent = blogs.length;
         }
 
-        function renderProducts() {
-            const tbody = document.getElementById('productsList');
+        function renderAllProducts() {
+            const container = document.getElementById('allProductsList');
             if (!products.length) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>No products found</td></tr>';
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No products found</p>';
                 return;
             }
 
-            tbody.innerHTML = products.map(p => `
-                <tr>
-                    <td><div style="display: flex; align-items: center; gap: 0.75rem;">${p.image ? `<img src="${p.image}" class="prod-img" alt="${p.name}">` : '<div style="width: 50px; height: 50px; background: var(--border-color); border-radius: 12px;"></div>'}<strong>${p.name || 'N/A'}</strong></div></td>
-                    <td>${p.category || 'Uncategorized'}</td>
-                    <td><strong>$${(parseFloat(p.price) || 0).toFixed(2)}</strong></td>
-                    <td><span class="badge ${p.isFeatured ? 'bg-success' : 'bg-secondary'}">${p.isFeatured ? '✓ Yes' : 'No'}</span></td>
-                    <td><span class="badge ${p.outOfStock ? 'bg-danger' : 'bg-success'}">${p.outOfStock ? 'Out of Stock' : 'In Stock'}</span></td>
-                    <td><button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button></td>
-                </tr>
+            container.innerHTML = products.map(p => `
+                <div class="product-card">
+                    <div class="product-card-img">
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                    </div>
+                    <div class="product-card-body">
+                        <h6>${p.name}</h6>
+                        <p>${p.category}</p>
+                        <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
+                        <div style="margin-bottom: 0.75rem;">
+                            ${p.isFeatured ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
+                            ${p.isPopular ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
+                            ${p.outOfStock ? '<span class="badge bg-danger">Out of Stock</span>' : ''}
+                        </div>
+                        <div class="product-card-actions">
+                            <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
             `).join('');
+        }
+
+        function renderFeaturedProducts() {
+            const featured = products.filter(p => p.isFeatured);
+            const containerPreview = document.getElementById('featuredProductsPreview');
+            const containerTab = document.getElementById('featuredProductsList');
+
+            if (!featured.length) {
+                containerPreview.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No featured products</p>';
+                containerTab.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No featured products</p>';
+                return;
+            }
+
+            const html = featured.map(p => `
+                <div class="product-card">
+                    <div class="product-card-img">
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                    </div>
+                    <div class="product-card-body">
+                        <h6>${p.name}</h6>
+                        <p>${p.category}</p>
+                        <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
+                        <div class="product-card-actions">
+                            <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            containerPreview.innerHTML = html;
+            containerTab.innerHTML = html;
+        }
+
+        function renderPopularProducts() {
+            const popular = products.filter(p => p.isPopular);
+            const containerPreview = document.getElementById('popularProductsPreview');
+            const containerTab = document.getElementById('popularProductsList');
+
+            if (!popular.length) {
+                containerPreview.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No popular products</p>';
+                containerTab.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No popular products</p>';
+                return;
+            }
+
+            const html = popular.map(p => `
+                <div class="product-card">
+                    <div class="product-card-img">
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                    </div>
+                    <div class="product-card-body">
+                        <h6>${p.name}</h6>
+                        <p>${p.category}</p>
+                        <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
+                        <div class="product-card-actions">
+                            <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            containerPreview.innerHTML = html;
+            containerTab.innerHTML = html;
         }
 
         function renderBlogs() {
             const tbody = document.getElementById('blogsList');
             if (!blogs.length) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="bi bi-newspaper" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>No blog posts found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No blog posts found</td></tr>';
                 return;
             }
 
@@ -903,7 +1082,7 @@
             if (subPhotosBase64.length) {
                 document.getElementById('subPhotosPreview').innerHTML = subPhotosBase64.map((photo, idx) => `
                     <div class="preview-item">
-                        <img src="${photo}" alt="Sub Photo ${idx + 1}">
+                        <img src="${photo}" alt="Sub Photo">
                     </div>
                 `).join('');
             }
@@ -956,12 +1135,14 @@
         }
 
         async function deleteProduct(id) {
-            if (!confirm('Are you sure?')) return;
+            if (!confirm('Are you sure you want to delete this product?')) return;
             try {
                 const res = await fetch(`/api/products?_id=${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     showToast('Product deleted!', 'success');
                     await loadData();
+                } else {
+                    showToast('Error deleting product', 'error');
                 }
             } catch (err) {
                 showToast('Error: ' + err.message, 'error');
@@ -1048,6 +1229,8 @@
                 if (res.ok) {
                     showToast('Blog post deleted!', 'success');
                     await loadData();
+                } else {
+                    showToast('Error deleting blog post', 'error');
                 }
             } catch (err) {
                 showToast('Error: ' + err.message, 'error');
@@ -1056,27 +1239,39 @@
 
         function filterProducts(query) {
             const filtered = products.filter(p => (p.name || '').toLowerCase().includes(query.toLowerCase()));
-            const tbody = document.getElementById('productsList');
+            const container = document.getElementById('allProductsList');
+            
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">No products found</td></tr>';
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No products found</p>';
                 return;
             }
 
-            tbody.innerHTML = filtered.map(p => `
-                <tr>
-                    <td><div style="display: flex; align-items: center; gap: 0.75rem;">${p.image ? `<img src="${p.image}" class="prod-img" alt="${p.name}">` : '<div style="width: 50px; height: 50px; background: var(--border-color); border-radius: 12px;"></div>'}<strong>${p.name}</strong></div></td>
-                    <td>${p.category}</td>
-                    <td><strong>$${(p.price || 0).toFixed(2)}</strong></td>
-                    <td><span class="badge ${p.isFeatured ? 'bg-success' : 'bg-secondary'}">${p.isFeatured ? '✓ Yes' : 'No'}</span></td>
-                    <td><span class="badge ${p.outOfStock ? 'bg-danger' : 'bg-success'}">${p.outOfStock ? 'Out of Stock' : 'In Stock'}</span></td>
-                    <td><button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button></td>
-                </tr>
+            container.innerHTML = filtered.map(p => `
+                <div class="product-card">
+                    <div class="product-card-img">
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                    </div>
+                    <div class="product-card-body">
+                        <h6>${p.name}</h6>
+                        <p>${p.category}</p>
+                        <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
+                        <div style="margin-bottom: 0.75rem;">
+                            ${p.isFeatured ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
+                            ${p.isPopular ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
+                        </div>
+                        <div class="product-card-actions">
+                            <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
             `).join('');
         }
 
         function filterBlogs(query) {
             const filtered = blogs.filter(b => (b.title || '').toLowerCase().includes(query.toLowerCase()));
             const tbody = document.getElementById('blogsList');
+            
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No blog posts found</td></tr>';
                 return;
