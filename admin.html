@@ -183,6 +183,7 @@
             justify-content: center;
             cursor: pointer;
             font-size: 0.8rem;
+            z-index: 10;
         }
 
         .preview-item .remove-btn:hover {
@@ -535,7 +536,7 @@
                 <div class="page-header">
                     <div class="page-header-left">
                         <h1>Featured Products</h1>
-                        <p>Products marked as Featured appear on the homepage.</p>
+                        <p>Only products marked as Featured appear here.</p>
                     </div>
                 </div>
 
@@ -549,7 +550,7 @@
                 <div class="page-header">
                     <div class="page-header-left">
                         <h1>Popular Products</h1>
-                        <p>Products marked as Popular appear in special section.</p>
+                        <p>Only products marked as Popular appear here.</p>
                     </div>
                 </div>
 
@@ -679,11 +680,11 @@
 
                         <!-- Sub Photos Upload -->
                         <div class="mb-3">
-                            <label class="form-label">Additional Product Photos (Multiple)</label>
+                            <label class="form-label">Additional Product Photos (Upload Multiple)</label>
                             <div class="upload-zone" id="subPhotosZone" onclick="document.getElementById('subPhotosInput').click()">
                                 <i class="bi bi-images"></i>
                                 <p style="margin: 0; font-weight: 600; color: var(--text-dark);">Click to upload or drag and drop</p>
-                                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Upload as many photos as you want (up to 5MB each)</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Select multiple photos at once (up to 5MB each)</p>
                             </div>
                             <input type="file" id="subPhotosInput" accept="image/*" multiple style="display: none;" onchange="handleSubPhotosUpload(event)">
                             <div id="subPhotosPreview" class="image-preview-grid"></div>
@@ -691,14 +692,15 @@
 
                         <div class="mb-3">
                             <label class="form-label">Product Status</label>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;"><strong>Note:</strong> Select ONLY ONE status - Featured OR Popular, not both</p>
                             <div>
                                 <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="productFeatured">
-                                    <label class="form-check-label" for="productFeatured">⭐ Featured Product (Shows on homepage)</label>
+                                    <input class="form-check-input" type="radio" id="productFeatured" name="productStatus" onclick="deselectPopular()">
+                                    <label class="form-check-label" for="productFeatured">⭐ Featured Product (Shows on featured section only)</label>
                                 </div>
                                 <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="productPopular">
-                                    <label class="form-check-label" for="productPopular">🔥 Popular Item (Shows in popular section)</label>
+                                    <input class="form-check-input" type="radio" id="productPopular" name="productStatus" onclick="deselectFeatured()">
+                                    <label class="form-check-label" for="productPopular">🔥 Popular Item (Shows in popular section only)</label>
                                 </div>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="productOutOfStock">
@@ -830,24 +832,26 @@
 
         function handleSubPhotosUpload(event) {
             const files = Array.from(event.target.files);
-            subPhotosBase64 = [];
-            const preview = document.getElementById('subPhotosPreview');
-            preview.innerHTML = '';
-
-            files.forEach((file, index) => {
+            
+            // Add new photos to existing array instead of replacing
+            files.forEach((file) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     subPhotosBase64.push(e.target.result);
-                    const newIndex = subPhotosBase64.length - 1;
-                    preview.innerHTML += `
-                        <div class="preview-item">
-                            <img src="${e.target.result}" alt="Sub Photo">
-                            <button type="button" class="remove-btn" onclick="removeSubPhoto(${newIndex})"><i class="bi bi-x"></i></button>
-                        </div>
-                    `;
+                    updateSubPhotosPreview();
                 };
                 reader.readAsDataURL(file);
             });
+        }
+
+        function updateSubPhotosPreview() {
+            const preview = document.getElementById('subPhotosPreview');
+            preview.innerHTML = subPhotosBase64.map((photo, idx) => `
+                <div class="preview-item">
+                    <img src="${photo}" alt="Sub Photo ${idx + 1}">
+                    <button type="button" class="remove-btn" onclick="removeSubPhoto(${idx})"><i class="bi bi-x"></i></button>
+                </div>
+            `).join('');
         }
 
         function handleBlogPhotoUpload(event) {
@@ -870,16 +874,15 @@
 
         function removeSubPhoto(index) {
             subPhotosBase64.splice(index, 1);
-            const preview = document.getElementById('subPhotosPreview');
-            preview.innerHTML = '';
-            subPhotosBase64.forEach((photo, idx) => {
-                preview.innerHTML += `
-                    <div class="preview-item">
-                        <img src="${photo}" alt="Sub Photo">
-                        <button type="button" class="remove-btn" onclick="removeSubPhoto(${idx})"><i class="bi bi-x"></i></button>
-                    </div>
-                `;
-            });
+            updateSubPhotosPreview();
+        }
+
+        function deselectFeatured() {
+            document.getElementById('productFeatured').checked = false;
+        }
+
+        function deselectPopular() {
+            document.getElementById('productPopular').checked = false;
         }
 
         function toggleSidebar() {
@@ -926,8 +929,8 @@
 
         function updateStats() {
             document.getElementById('stat-products').textContent = products.length;
-            document.getElementById('stat-featured').textContent = products.filter(p => p.isFeatured).length;
-            document.getElementById('stat-popular').textContent = products.filter(p => p.isPopular).length;
+            document.getElementById('stat-featured').textContent = products.filter(p => p.isFeatured && !p.isPopular).length;
+            document.getElementById('stat-popular').textContent = products.filter(p => p.isPopular && !p.isFeatured).length;
             document.getElementById('stat-blogs').textContent = blogs.length;
         }
 
@@ -948,8 +951,8 @@
                         <p>${p.category}</p>
                         <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
                         <div style="margin-bottom: 0.75rem;">
-                            ${p.isFeatured ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
-                            ${p.isPopular ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
+                            ${p.isFeatured && !p.isPopular ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
+                            ${p.isPopular && !p.isFeatured ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
                             ${p.outOfStock ? '<span class="badge bg-danger">Out of Stock</span>' : ''}
                         </div>
                         <div class="product-card-actions">
@@ -962,7 +965,7 @@
         }
 
         function renderFeaturedProducts() {
-            const featured = products.filter(p => p.isFeatured);
+            const featured = products.filter(p => p.isFeatured && !p.isPopular);
             const containerPreview = document.getElementById('featuredProductsPreview');
             const containerTab = document.getElementById('featuredProductsList');
 
@@ -994,7 +997,7 @@
         }
 
         function renderPopularProducts() {
-            const popular = products.filter(p => p.isPopular);
+            const popular = products.filter(p => p.isPopular && !p.isFeatured);
             const containerPreview = document.getElementById('popularProductsPreview');
             const containerTab = document.getElementById('popularProductsList');
 
@@ -1051,6 +1054,8 @@
             subPhotosBase64 = [];
             document.getElementById('mainPhotoPreview').innerHTML = '';
             document.getElementById('subPhotosPreview').innerHTML = '';
+            document.getElementById('mainPhotoInput').value = '';
+            document.getElementById('subPhotosInput').value = '';
             new bootstrap.Modal(document.getElementById('productModal')).show();
         }
 
@@ -1063,13 +1068,13 @@
             document.getElementById('productCategory').value = p.category || 'Electronics';
             document.getElementById('productPrice').value = p.price || '';
             document.getElementById('productDescription').value = p.description || '';
-            document.getElementById('productFeatured').checked = !!p.isFeatured;
-            document.getElementById('productPopular').checked = !!p.isPopular;
+            document.getElementById('productFeatured').checked = p.isFeatured && !p.isPopular;
+            document.getElementById('productPopular').checked = p.isPopular && !p.isFeatured;
             document.getElementById('productOutOfStock').checked = !!p.outOfStock;
             document.getElementById('productModalTitle').textContent = 'Edit Product';
             
             mainPhotoBase64 = p.image || '';
-            subPhotosBase64 = p.subImages || [];
+            subPhotosBase64 = Array.isArray(p.subImages) ? p.subImages : [];
             
             if (mainPhotoBase64) {
                 document.getElementById('mainPhotoPreview').innerHTML = `
@@ -1083,6 +1088,7 @@
                 document.getElementById('subPhotosPreview').innerHTML = subPhotosBase64.map((photo, idx) => `
                     <div class="preview-item">
                         <img src="${photo}" alt="Sub Photo">
+                        <button type="button" class="remove-btn" onclick="removeSubPhoto(${idx})"><i class="bi bi-x"></i></button>
                     </div>
                 `).join('');
             }
@@ -1097,6 +1103,9 @@
             btn.innerHTML = '<span class="loading-spinner"></span>';
 
             try {
+                const isFeatured = document.getElementById('productFeatured').checked;
+                const isPopular = document.getElementById('productPopular').checked;
+
                 const data = {
                     _id: document.getElementById('productId').value || undefined,
                     name: document.getElementById('productName').value,
@@ -1105,8 +1114,8 @@
                     description: document.getElementById('productDescription').value,
                     image: mainPhotoBase64,
                     subImages: subPhotosBase64,
-                    isFeatured: document.getElementById('productFeatured').checked,
-                    isPopular: document.getElementById('productPopular').checked,
+                    isFeatured: isFeatured,
+                    isPopular: isPopular,
                     outOfStock: document.getElementById('productOutOfStock').checked
                 };
 
@@ -1256,8 +1265,8 @@
                         <p>${p.category}</p>
                         <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
                         <div style="margin-bottom: 0.75rem;">
-                            ${p.isFeatured ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
-                            ${p.isPopular ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
+                            ${p.isFeatured && !p.isPopular ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
+                            ${p.isPopular && !p.isFeatured ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
                         </div>
                         <div class="product-card-actions">
                             <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
