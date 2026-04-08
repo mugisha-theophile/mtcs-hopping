@@ -428,9 +428,6 @@
             <a href="#" class="nav-link" onclick="switchTab('blogs', this); return false;">
                 <i class="bi bi-journal-text"></i> News & Blog
             </a>
-            <a href="#" class="nav-link" onclick="switchTab('orders', this); return false;">
-                <i class="bi bi-truck"></i> Orders
-            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -589,35 +586,6 @@
                             </thead>
                             <tbody id="blogsList">
                                 <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading blog posts...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Orders Tab -->
-            <div id="tab-orders" class="tab-pane">
-                <div class="page-header">
-                    <div class="page-header-left">
-                        <h1>Order Management</h1>
-                        <p>Track and manage customer orders.</p>
-                    </div>
-                </div>
-
-                <div class="glass-card">
-                    <div class="table-wrapper">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="bi bi-bag-check" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>No orders yet</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -908,22 +876,52 @@
             closeSidebar();
         }
 
+        // FIXED LOAD DATA - Compatible with pagination API
         async function loadData() {
             try {
-                const [pRes, bRes] = await Promise.all([fetch('/api/products'), fetch('/api/blogs')]);
-                if (pRes.ok) {
-                    products = await pRes.json();
-                    renderAllProducts();
-                    renderFeaturedProducts();
-                    renderPopularProducts();
+                console.log('Loading products and blogs...');
+                
+                // Load products with pagination
+                const pRes = await fetch('/api/products');
+                if (!pRes.ok) {
+                    console.error('Products response:', pRes.status, pRes.statusText);
+                    throw new Error(`Products API error: ${pRes.status}`);
                 }
-                if (bRes.ok) {
-                    blogs = await bRes.json();
-                    renderBlogs();
+                
+                const pData = await pRes.json();
+                console.log('Products data:', pData);
+                
+                // Handle both old format (array) and new format (pagination)
+                if (Array.isArray(pData)) {
+                    products = pData;
+                } else if (pData.products) {
+                    products = pData.products;
+                } else {
+                    products = [];
                 }
+                
+                renderAllProducts();
+                renderFeaturedProducts();
+                renderPopularProducts();
+
+                // Load blogs
+                const bRes = await fetch('/api/blogs');
+                if (!bRes.ok) {
+                    console.error('Blogs response:', bRes.status, bRes.statusText);
+                    throw new Error(`Blogs API error: ${bRes.status}`);
+                }
+                
+                const bData = await bRes.json();
+                console.log('Blogs data:', bData);
+                
+                blogs = Array.isArray(bData) ? bData : [];
+                renderBlogs();
+
                 updateStats();
+                console.log('Data loaded successfully!');
             } catch (err) {
-                showToast('Error loading data', 'error');
+                console.error('Error loading data:', err);
+                showToast('⚠️ Error loading data: ' + err.message, 'error');
             }
         }
 
@@ -944,7 +942,7 @@
             container.innerHTML = products.map(p => `
                 <div class="product-card">
                     <div class="product-card-img">
-                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body); color: var(--text-muted);"><i class="bi bi-image" style="font-size: 2rem;"></i></div>'}
                     </div>
                     <div class="product-card-body">
                         <h6>${p.name}</h6>
@@ -978,7 +976,7 @@
             const html = featured.map(p => `
                 <div class="product-card">
                     <div class="product-card-img">
-                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body); color: var(--text-muted);"><i class="bi bi-image" style="font-size: 2rem;"></i></div>'}
                     </div>
                     <div class="product-card-body">
                         <h6>${p.name}</h6>
@@ -1010,7 +1008,7 @@
             const html = popular.map(p => `
                 <div class="product-card">
                     <div class="product-card-img">
-                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body); color: var(--text-muted);"><i class="bi bi-image" style="font-size: 2rem;"></i></div>'}
                     </div>
                     <div class="product-card-body">
                         <h6>${p.name}</h6>
@@ -1029,19 +1027,22 @@
         }
 
         function renderBlogs() {
-            const tbody = document.getElementById('blogsList');
+            const list = document.getElementById('blogsList');
             if (!blogs.length) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No blog posts found</td></tr>';
+                list.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No blog posts</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = blogs.map(b => `
+            list.innerHTML = blogs.map(b => `
                 <tr>
-                    <td><strong>${b.title || 'N/A'}</strong></td>
-                    <td>${b.category || 'Uncategorized'}</td>
-                    <td>${b.date ? new Date(b.date).toLocaleDateString() : 'N/A'}</td>
-                    <td><span class="badge ${b.isFeatured ? 'bg-success' : 'bg-secondary'}">${b.isFeatured ? '✓ Featured' : 'Not Featured'}</span></td>
-                    <td><button class="btn btn-sm btn-outline-dark" onclick="editBlog('${b._id || b.id}')"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger" onclick="deleteBlog('${b._id || b.id}')"><i class="bi bi-trash"></i></button></td>
+                    <td><strong>${b.title}</strong></td>
+                    <td>${b.category || '-'}</td>
+                    <td>${b.date || '-'}</td>
+                    <td><span class="badge ${b.isFeatured ? 'bg-success' : 'bg-secondary'}">${b.isFeatured ? 'Yes' : 'No'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-dark" onclick="editBlog('${b._id || b.id}')"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteBlog('${b._id || b.id}')"><i class="bi bi-trash"></i></button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -1054,53 +1055,46 @@
             subPhotosBase64 = [];
             document.getElementById('mainPhotoPreview').innerHTML = '';
             document.getElementById('subPhotosPreview').innerHTML = '';
-            document.getElementById('mainPhotoInput').value = '';
-            document.getElementById('subPhotosInput').value = '';
             new bootstrap.Modal(document.getElementById('productModal')).show();
         }
 
         function editProduct(id) {
-            const p = products.find(x => (x._id || x.id) === id);
-            if (!p) return;
+            const product = products.find(p => (p._id || p.id) === id);
+            if (!product) return;
 
-            document.getElementById('productId').value = p._id || p.id;
-            document.getElementById('productName').value = p.name || '';
-            document.getElementById('productCategory').value = p.category || 'Electronics';
-            document.getElementById('productPrice').value = p.price || '';
-            document.getElementById('productDescription').value = p.description || '';
-            document.getElementById('productFeatured').checked = p.isFeatured && !p.isPopular;
-            document.getElementById('productPopular').checked = p.isPopular && !p.isFeatured;
-            document.getElementById('productOutOfStock').checked = !!p.outOfStock;
+            document.getElementById('productId').value = product._id || product.id;
+            document.getElementById('productName').value = product.name || '';
+            document.getElementById('productCategory').value = product.category || 'Electronics';
+            document.getElementById('productPrice').value = parseFloat(product.price) || 0;
+            document.getElementById('productDescription').value = product.description || '';
+            document.getElementById('productFeatured').checked = !!product.isFeatured;
+            document.getElementById('productPopular').checked = !!product.isPopular;
+            document.getElementById('productOutOfStock').checked = !!product.outOfStock;
+
             document.getElementById('productModalTitle').textContent = 'Edit Product';
             
-            mainPhotoBase64 = p.image || '';
-            subPhotosBase64 = Array.isArray(p.subImages) ? p.subImages : [];
-            
-            if (mainPhotoBase64) {
+            mainPhotoBase64 = product.image || '';
+            if (product.image) {
                 document.getElementById('mainPhotoPreview').innerHTML = `
                     <div class="preview-item">
-                        <img src="${mainPhotoBase64}" alt="Main Photo">
+                        <img src="${product.image}" alt="Main Photo">
+                        <button type="button" class="remove-btn" onclick="mainPhotoBase64=''; document.getElementById('mainPhotoPreview').innerHTML='';"><i class="bi bi-x"></i></button>
                     </div>
                 `;
             }
-            
-            if (subPhotosBase64.length) {
-                document.getElementById('subPhotosPreview').innerHTML = subPhotosBase64.map((photo, idx) => `
-                    <div class="preview-item">
-                        <img src="${photo}" alt="Sub Photo">
-                        <button type="button" class="remove-btn" onclick="removeSubPhoto(${idx})"><i class="bi bi-x"></i></button>
-                    </div>
-                `).join('');
-            }
-            
+
+            subPhotosBase64 = product.subImages || [];
+            updateSubPhotosPreview();
+
             new bootstrap.Modal(document.getElementById('productModal')).show();
         }
 
+        // FIXED SAVE PRODUCT - Better error handling
         async function saveProduct() {
             const btn = document.getElementById('saveProductBtn');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span>';
+            btn.innerHTML = '<span class="loading-spinner"></span> Saving...';
 
             try {
                 const isFeatured = document.getElementById('productFeatured').checked;
@@ -1116,8 +1110,11 @@
                     subImages: subPhotosBase64,
                     isFeatured: isFeatured,
                     isPopular: isPopular,
-                    outOfStock: document.getElementById('productOutOfStock').checked
+                    outOfStock: document.getElementById('productOutOfStock').checked,
+                    updatedAt: new Date()
                 };
+
+                console.log('Saving product:', data);
 
                 const res = await fetch('/api/products', {
                     method: 'POST',
@@ -1125,18 +1122,33 @@
                     body: JSON.stringify(data)
                 });
 
-                if (res.ok) {
-                    showToast('Product saved successfully!', 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-                    mainPhotoBase64 = '';
-                    subPhotosBase64 = [];
-                    await loadData();
-                } else {
+                console.log('Save response:', res.status, res.statusText);
+                
+                if (!res.ok) {
                     const error = await res.json();
-                    showToast(error.message || 'Error saving product', 'error');
+                    console.error('Save error:', error);
+                    showToast('❌ Error: ' + (error.message || error.error || 'Unknown error'), 'error');
+                    return;
                 }
+
+                const result = await res.json();
+                console.log('Product saved:', result);
+                
+                showToast('✅ Product saved successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+                
+                // Clear form
+                document.getElementById('productForm').reset();
+                mainPhotoBase64 = '';
+                subPhotosBase64 = [];
+                document.getElementById('mainPhotoPreview').innerHTML = '';
+                document.getElementById('subPhotosPreview').innerHTML = '';
+                
+                // Reload data
+                await loadData();
             } catch (err) {
-                showToast('Connection error: ' + err.message, 'error');
+                console.error('Connection error:', err);
+                showToast('❌ Connection error: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -1145,17 +1157,55 @@
 
         async function deleteProduct(id) {
             if (!confirm('Are you sure you want to delete this product?')) return;
+
             try {
                 const res = await fetch(`/api/products?_id=${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    showToast('Product deleted!', 'success');
+                    showToast('✅ Product deleted!', 'success');
                     await loadData();
                 } else {
-                    showToast('Error deleting product', 'error');
+                    showToast('❌ Error deleting product', 'error');
                 }
             } catch (err) {
-                showToast('Error: ' + err.message, 'error');
+                console.error('Delete error:', err);
+                showToast('❌ Error: ' + err.message, 'error');
             }
+        }
+
+        function filterProducts(query) {
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(query.toLowerCase()) ||
+                p.category.toLowerCase().includes(query.toLowerCase()) ||
+                p.description.toLowerCase().includes(query.toLowerCase())
+            );
+
+            const container = document.getElementById('allProductsList');
+            if (!filtered.length) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No products found</p>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div class="product-card">
+                    <div class="product-card-img">
+                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body); color: var(--text-muted);"><i class="bi bi-image" style="font-size: 2rem;"></i></div>'}
+                    </div>
+                    <div class="product-card-body">
+                        <h6>${p.name}</h6>
+                        <p>${p.category}</p>
+                        <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
+                        <div style="margin-bottom: 0.75rem;">
+                            ${p.isFeatured && !p.isPopular ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
+                            ${p.isPopular && !p.isFeatured ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
+                            ${p.outOfStock ? '<span class="badge bg-danger">Out of Stock</span>' : ''}
+                        </div>
+                        <div class="product-card-actions">
+                            <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function openBlogModal() {
@@ -1164,38 +1214,42 @@
             document.getElementById('blogModalTitle').textContent = 'New Blog Post';
             blogPhotoBase64 = '';
             document.getElementById('blogPhotoPreview').innerHTML = '';
+            document.getElementById('blogDate').valueAsDate = new Date();
             new bootstrap.Modal(document.getElementById('blogModal')).show();
         }
 
         function editBlog(id) {
-            const b = blogs.find(x => (x._id || x.id) === id);
-            if (!b) return;
+            const blog = blogs.find(b => (b._id || b.id) === id);
+            if (!blog) return;
 
-            document.getElementById('blogId').value = b._id || b.id;
-            document.getElementById('blogTitle').value = b.title || '';
-            document.getElementById('blogCategory').value = b.category || '';
-            document.getElementById('blogDate').value = b.date ? b.date.split('T')[0] : '';
-            document.getElementById('blogContent').value = b.content || '';
-            document.getElementById('blogFeatured').checked = !!b.isFeatured;
+            document.getElementById('blogId').value = blog._id || blog.id;
+            document.getElementById('blogTitle').value = blog.title || '';
+            document.getElementById('blogCategory').value = blog.category || '';
+            document.getElementById('blogDate').value = blog.date || '';
+            document.getElementById('blogContent').value = blog.content || '';
+            document.getElementById('blogFeatured').checked = !!blog.isFeatured;
+
             document.getElementById('blogModalTitle').textContent = 'Edit Blog Post';
             
-            blogPhotoBase64 = b.image || '';
-            if (blogPhotoBase64) {
+            blogPhotoBase64 = blog.image || '';
+            if (blog.image) {
                 document.getElementById('blogPhotoPreview').innerHTML = `
                     <div class="preview-item">
-                        <img src="${blogPhotoBase64}" alt="Blog Photo">
+                        <img src="${blog.image}" alt="Blog Photo">
+                        <button type="button" class="remove-btn" onclick="blogPhotoBase64=''; document.getElementById('blogPhotoPreview').innerHTML='';"><i class="bi bi-x"></i></button>
                     </div>
                 `;
             }
-            
+
             new bootstrap.Modal(document.getElementById('blogModal')).show();
         }
 
+        // FIXED SAVE BLOG - Better error handling
         async function saveBlog() {
             const btn = document.getElementById('saveBlogBtn');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span>';
+            btn.innerHTML = '<span class="loading-spinner"></span> Saving...';
 
             try {
                 const data = {
@@ -1208,23 +1262,39 @@
                     isFeatured: document.getElementById('blogFeatured').checked
                 };
 
+                console.log('Saving blog:', data);
+
                 const res = await fetch('/api/blogs', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
-                if (res.ok) {
-                    showToast('Blog post saved successfully!', 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('blogModal')).hide();
-                    blogPhotoBase64 = '';
-                    await loadData();
-                } else {
+                console.log('Blog save response:', res.status, res.statusText);
+                
+                if (!res.ok) {
                     const error = await res.json();
-                    showToast(error.message || 'Error saving blog', 'error');
+                    console.error('Blog save error:', error);
+                    showToast('❌ Error: ' + (error.message || error.error || 'Unknown error'), 'error');
+                    return;
                 }
+
+                const result = await res.json();
+                console.log('Blog saved:', result);
+                
+                showToast('✅ Blog post saved successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('blogModal')).hide();
+                
+                // Clear form
+                document.getElementById('blogForm').reset();
+                blogPhotoBase64 = '';
+                document.getElementById('blogPhotoPreview').innerHTML = '';
+                
+                // Reload data
+                await loadData();
             } catch (err) {
-                showToast('Connection error: ' + err.message, 'error');
+                console.error('Connection error:', err);
+                showToast('❌ Connection error: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -1232,75 +1302,60 @@
         }
 
         async function deleteBlog(id) {
-            if (!confirm('Are you sure?')) return;
+            if (!confirm('Are you sure you want to delete this blog post?')) return;
+
             try {
                 const res = await fetch(`/api/blogs?_id=${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    showToast('Blog post deleted!', 'success');
+                    showToast('✅ Blog post deleted!', 'success');
                     await loadData();
                 } else {
-                    showToast('Error deleting blog post', 'error');
+                    showToast('❌ Error deleting blog post', 'error');
                 }
             } catch (err) {
-                showToast('Error: ' + err.message, 'error');
+                console.error('Delete error:', err);
+                showToast('❌ Error: ' + err.message, 'error');
             }
-        }
-
-        function filterProducts(query) {
-            const filtered = products.filter(p => (p.name || '').toLowerCase().includes(query.toLowerCase()));
-            const container = document.getElementById('allProductsList');
-            
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No products found</p>';
-                return;
-            }
-
-            container.innerHTML = filtered.map(p => `
-                <div class="product-card">
-                    <div class="product-card-img">
-                        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--bg-body);"><i class="bi bi-image" style="font-size: 2rem; color: var(--text-muted);"></i></div>'}
-                    </div>
-                    <div class="product-card-body">
-                        <h6>${p.name}</h6>
-                        <p>${p.category}</p>
-                        <div class="product-card-price">$${(parseFloat(p.price) || 0).toFixed(2)}</div>
-                        <div style="margin-bottom: 0.75rem;">
-                            ${p.isFeatured && !p.isPopular ? '<span class="badge bg-success me-2">⭐ Featured</span>' : ''}
-                            ${p.isPopular && !p.isFeatured ? '<span class="badge bg-info me-2">🔥 Popular</span>' : ''}
-                        </div>
-                        <div class="product-card-actions">
-                            <button class="btn btn-sm btn-outline-dark" onclick="editProduct('${p._id || p.id}')"><i class="bi bi-pencil"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id || p.id}')"><i class="bi bi-trash"></i></button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
         }
 
         function filterBlogs(query) {
-            const filtered = blogs.filter(b => (b.title || '').toLowerCase().includes(query.toLowerCase()));
-            const tbody = document.getElementById('blogsList');
-            
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No blog posts found</td></tr>';
+            const filtered = blogs.filter(b =>
+                b.title.toLowerCase().includes(query.toLowerCase()) ||
+                (b.category && b.category.toLowerCase().includes(query.toLowerCase())) ||
+                (b.content && b.content.toLowerCase().includes(query.toLowerCase()))
+            );
+
+            const list = document.getElementById('blogsList');
+            if (!filtered.length) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No blog posts found</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = filtered.map(b => `
+            list.innerHTML = filtered.map(b => `
                 <tr>
                     <td><strong>${b.title}</strong></td>
-                    <td>${b.category}</td>
-                    <td>${b.date ? new Date(b.date).toLocaleDateString() : 'N/A'}</td>
-                    <td><span class="badge ${b.isFeatured ? 'bg-success' : 'bg-secondary'}">${b.isFeatured ? '✓ Featured' : 'Not Featured'}</span></td>
-                    <td><button class="btn btn-sm btn-outline-dark" onclick="editBlog('${b._id || b.id}')"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger" onclick="deleteBlog('${b._id || b.id}')"><i class="bi bi-trash"></i></button></td>
+                    <td>${b.category || '-'}</td>
+                    <td>${b.date || '-'}</td>
+                    <td><span class="badge ${b.isFeatured ? 'bg-success' : 'bg-secondary'}">${b.isFeatured ? 'Yes' : 'No'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-dark" onclick="editBlog('${b._id || b.id}')"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteBlog('${b._id || b.id}')"><i class="bi bi-trash"></i></button>
+                    </td>
                 </tr>
             `).join('');
         }
 
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminLoggedIn');
+                window.location.href = 'index.html';
+            }
+        }
+
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = `toast-notification ${type}`;
-            toast.innerHTML = `<div style="display: flex; align-items: center; gap: 0.75rem;"><i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-circle-fill'}"></i><span>${message}</span></div>`;
+            toast.className = `toast-notification ${type === 'error' ? 'error' : ''}`;
+            toast.innerHTML = message;
             document.body.appendChild(toast);
 
             setTimeout(() => {
@@ -1308,20 +1363,6 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
-
-        function handleLogout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.clear();
-                window.location.href = '/';
-            }
-        }
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                document.getElementById('sidebar').classList.remove('active');
-                document.getElementById('sidebarOverlay').classList.remove('active');
-            }
-        });
     </script>
 </body>
 </html>
