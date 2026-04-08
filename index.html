@@ -9058,6 +9058,74 @@
         });
     </script>
 
+    <!-- Product Loading Script -->
+<script>
+  document.addEventListener('DOMContentLoaded', async function() {
+    try {
+      // Fetch products from API
+      const response = await fetch('/api/products?limit=100');
+      const data = await response.json();
+      const products = data.products || [];
+
+      // Separate by category
+      const featured = products.filter(p => p.isFeatured && !p.isPopular);
+      const popular = products.filter(p => p.isPopular && !p.isFeatured);
+      const all = products.filter(p => !p.isFeatured && !p.isPopular);
+
+      // Find or create product sections
+      let featuredContainer = document.getElementById('featured-products-list') || createSection('Featured Products');
+      let popularContainer = document.getElementById('popular-products-list') || createSection('Popular Products');
+      let allContainer = document.getElementById('all-products-list') || createSection('All Products');
+
+      // Display products
+      displayProducts(featuredContainer, featured);
+      displayProducts(popularContainer, popular);
+      displayProducts(allContainer, all);
+
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+
+    function createSection(title) {
+      const section = document.createElement('div');
+      section.className = 'products-section mb-5';
+      section.innerHTML = `
+        <h2 class="mb-4">${title}</h2>
+        <div class="row g-4" id="${title.toLowerCase().replace(' ', '-')}-list"></div>
+      `;
+      document.body.appendChild(section);
+      return section.querySelector('.row');
+    }
+
+    function displayProducts(container, products) {
+      if (products.length === 0) return;
+
+      products.forEach(product => {
+        const productCard = document.createElement('div');
+        productCard.className = 'col-lg-3 col-md-4 col-sm-6 col-12';
+        productCard.innerHTML = `
+          <div class="product-card-link" style="border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; display: block; transition: all 0.2s ease;">
+            <div style="width: 100%; height: 200px; background: var(--bg-secondary); overflow: hidden;">
+              <img src="${product.image || 'https://via.placeholder.com/200'}" 
+                   alt="${product.name}" 
+                   style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <div style="padding: 1rem;">
+              <h6 style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--text-primary);">${product.name}</h6>
+              <p style="margin: 0 0 0.75rem 0; color: var(--text-muted); font-size: 0.9rem;">${product.category || 'Product'}</p>
+              <p style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--brand);">$${parseFloat(product.price).toFixed(2)}</p>
+              <button class="btn btn-brand" style="width: 100%; margin-top: 0.75rem; background: var(--brand); color: white; border: none; padding: 0.5rem; border-radius: 8px;">
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(productCard);
+      });
+    }
+  });
+</script>
+
 </body>
 
 </html>
