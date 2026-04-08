@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       // Add pagination support
       const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 20;
+      const limit = parseInt(req.query.limit) || 100;
       const skip = (page - 1) * limit;
       const featured = req.query.featured === 'true';
       const popular = req.query.popular === 'true';
@@ -19,10 +19,9 @@ module.exports = async (req, res) => {
       if (featured) query = { isFeatured: true, isPopular: false };
       if (popular) query = { isPopular: true, isFeatured: false };
 
-      // Return data WITHOUT full base64 images for list views - FAST LOADING
+      // FIXED: Include images in response - removed .project() to get all fields including images
       const products = await collection
         .find(query)
-        .project({ image: 0, subImages: 0 }) // Exclude images on list
         .skip(skip)
         .limit(limit)
         .toArray();
@@ -59,17 +58,17 @@ module.exports = async (req, res) => {
       const product = req.body;
       let result;
 
-      // Validate images aren't too large
-      const MAX_IMAGE_SIZE = 500000; // 500KB limit per image
+      // Validate images aren't too large - increased to 5MB
+      const MAX_IMAGE_SIZE = 5242880; // 5MB limit per image
       
-      if (product.image && product.image.length > MAX_IMAGE_SIZE * 2) {
-        return res.status(400).json({ error: 'Main image too large. Max 500KB' });
+      if (product.image && typeof product.image === 'string' && product.image.length > MAX_IMAGE_SIZE) {
+        return res.status(400).json({ error: 'Main image too large. Max 5MB' });
       }
 
       if (product.subImages && Array.isArray(product.subImages)) {
         for (let img of product.subImages) {
-          if (img.length > MAX_IMAGE_SIZE * 2) {
-            return res.status(400).json({ error: 'Sub image too large. Max 500KB each' });
+          if (typeof img === 'string' && img.length > MAX_IMAGE_SIZE) {
+            return res.status(400).json({ error: 'Sub image too large. Max 5MB each' });
           }
         }
       }
@@ -79,16 +78,29 @@ module.exports = async (req, res) => {
         product.price = parseFloat(product.price.toString().replace(/[^0-9.]/g, '')) || 0;
       }
 
+      // Set created/updated timestamp
+      product.updatedAt = new Date();
+      if (!product.createdAt) {
+        product.createdAt = new Date();
+      }
+
       if (product._id) {
         try {
           const _id = new ObjectId(product._id);
-          delete product._id;
+          const updateData = { ...product };
+          delete updateData._id;
+          
           result = await collection.updateOne(
             { _id: _id },
-            { $set: product },
+            { $set: updateData },
             { upsert: false }
           );
+          
+          if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+          }
         } catch (oidError) {
+          console.error('ObjectId error:', oidError);
           result = await collection.updateOne(
             { id: product._id },
             { $set: product },
@@ -105,7 +117,8 @@ module.exports = async (req, res) => {
         result = await collection.insertOne(product);
       }
       
-      return res.status(200).json(result);
+      console.log('Product save result:', result);
+      return res.status(200).json({ success: true, result });
     }
 
     if (req.method === 'DELETE') {
