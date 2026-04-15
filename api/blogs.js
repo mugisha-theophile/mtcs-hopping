@@ -1,24 +1,5 @@
-const fs = require('fs');
-const path = require('path');
-
-const DATA_FILE = path.join(__dirname, '../blogs.json');
-
-const ensureDataFile = () => {
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
-  }
-};
-
-const readFromFile = () => {
-  ensureDataFile();
-  const data = fs.readFileSync(DATA_FILE, 'utf8');
-  return JSON.parse(data || '[]');
-};
-
-const writeToFile = (blogs) => {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(blogs, null, 2));
-};
+const clientPromise = require('./mongodb');
+const { ObjectId } = require('mongodb');
 
 module.exports = async (req, res) => {
   try {
@@ -31,34 +12,76 @@ module.exports = async (req, res) => {
       return res.status(200).end();
     }
 
+    const client = await clientPromise;
+    const db = client.db("mtcshopping");
+    const collection = db.collection("blogs");
+
+    // GET all blogs
     if (req.method === 'GET') {
-      const blogs = readFromFile();
+      const blogs = await collection.find({}).toArray();
       return res.status(200).json(blogs);
     }
 
+    // POST - Save new or update existing blog
     if (req.method === 'POST') {
       const blog = req.body;
-      let blogs = readFromFile();
-      
-      if (blog._id) {
-        const index = blogs.findIndex(b => b._id === blog._id);
-        if (index !== -1) blogs[index] = blog;
-        else blogs.push(blog);
-      } else {
-        blog._id = Date.now().toString();
-        blogs.push(blog);
+      let result;
+
+      // Validate image size (5MB max)
+      const MAX_IMAGE_SIZE = 5242880;
+      if (blog.image && typeof blog.image === 'string' && blog.image.length > MAX_IMAGE_SIZE) {
+        return res.status(400).json({ error: 'Blog image too large. Max 5MB' });
       }
-      
-      writeToFile(blogs);
+
+      blog.updatedAt = new Date();
+      if (!blog.createdAt) {
+        blog.createdAt = new Date();
+      }
+
+      // Update existing or insert new
+      if (blog._id) {
+        try {
+          const _id = new ObjectId(blog._id);
+          const updateData = { ...blog };
+          delete updateData._id;
+          
+          result = await collection.updateOne(
+            { _id: _id },
+            { $set: updateData },
+            { upsert: true }
+          );
+        } catch (e) {
+          // Fallback for string IDs
+          result = await collection.updateOne(
+            { _id: blog._id },
+            { $set: blog },
+            { upsert: true }
+          );
+        }
+      } else {
+        result = await collection.insertOne(blog);
+        blog._id = result.insertedId;
+      }
+
       return res.status(201).json(blog);
     }
 
+    // DELETE blog
     if (req.method === 'DELETE') {
-      const { id } = req.body;
-      let blogs = readFromFile();
-      blogs = blogs.filter(b => b._id !== id);
-      writeToFile(blogs);
-      return res.status(200).json({ success: true });
+      const { id, _id } = req.query;
+      let result;
+
+      if (_id) {
+        try {
+          result = await collection.deleteOne({ _id: new ObjectId(_id) });
+        } catch (e) {
+          result = await collection.deleteOne({ _id: _id });
+        }
+      } else if (id) {
+        result = await collection.deleteOne({ _id: id });
+      }
+
+      return res.status(200).json({ success: true, result });
     }
 
     res.status(405).json({ error: 'Method not allowed' });
