@@ -1,27 +1,5 @@
-const fs = require('fs');
-const path = require('path');
-
-const DATA_FILE = path.join(__dirname, '../products.json');
-
-// Ensure data file exists
-const ensureDataFile = () => {
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
-  }
-};
-
-// Read from file
-const readFromFile = () => {
-  ensureDataFile();
-  const data = fs.readFileSync(DATA_FILE, 'utf8');
-  return JSON.parse(data || '[]');
-};
-
-// Write to file
-const writeToFile = (products) => {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
-};
+const clientPromise = require('./mongodb');
+const { ObjectId } = require('mongodb');
 
 module.exports = async (req, res) => {
   try {
@@ -34,34 +12,76 @@ module.exports = async (req, res) => {
       return res.status(200).end();
     }
 
+    const client = await clientPromise;
+    const db = client.db("mtcshopping");
+    const collection = db.collection("products");
+
+    // GET all products
     if (req.method === 'GET') {
-      const products = readFromFile();
+      const products = await collection.find({}).toArray();
       return res.status(200).json(products);
     }
 
+    // POST - Save new or update existing product
     if (req.method === 'POST') {
       const product = req.body;
-      let products = readFromFile();
-      
-      if (product._id) {
-        const index = products.findIndex(p => p._id === product._id);
-        if (index !== -1) products[index] = product;
-        else products.push(product);
-      } else {
-        product._id = Date.now().toString();
-        products.push(product);
+      let result;
+
+      // Validate image size (5MB max)
+      const MAX_IMAGE_SIZE = 5242880;
+      if (product.image && typeof product.image === 'string' && product.image.length > MAX_IMAGE_SIZE) {
+        return res.status(400).json({ error: 'Main image too large. Max 5MB' });
       }
-      
-      writeToFile(products);
+
+      product.updatedAt = new Date();
+      if (!product.createdAt) {
+        product.createdAt = new Date();
+      }
+
+      // Update existing or insert new
+      if (product._id) {
+        try {
+          const _id = new ObjectId(product._id);
+          const updateData = { ...product };
+          delete updateData._id;
+          
+          result = await collection.updateOne(
+            { _id: _id },
+            { $set: updateData },
+            { upsert: true }
+          );
+        } catch (e) {
+          // Fallback for string IDs
+          result = await collection.updateOne(
+            { _id: product._id },
+            { $set: product },
+            { upsert: true }
+          );
+        }
+      } else {
+        result = await collection.insertOne(product);
+        product._id = result.insertedId;
+      }
+
       return res.status(201).json(product);
     }
 
+    // DELETE product
     if (req.method === 'DELETE') {
-      const { id } = req.body;
-      let products = readFromFile();
-      products = products.filter(p => p._id !== id);
-      writeToFile(products);
-      return res.status(200).json({ success: true });
+      const { id, _id } = req.query;
+      let result;
+
+      if (_id) {
+        try {
+          result = await collection.deleteOne({ _id: new ObjectId(_id) });
+        } catch (e) {
+          result = await collection.deleteOne({ _id: _id });
+        }
+      } else if (id) {
+        result = await collection.deleteOne({ _id: id });
+      }
+
+      return res.status(200).json({ success: true, result });
     }
 
     res.status(405).json({ error: 'Method not allowed' });
