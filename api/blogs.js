@@ -1,55 +1,67 @@
-const clientPromise = require('./mongodb');
-const { ObjectId } = require('mongodb');
+const fs = require('fs');
+const path = require('path');
+
+const DATA_FILE = path.join(__dirname, '../blogs.json');
+
+const ensureDataFile = () => {
+  if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
+  }
+};
+
+const readFromFile = () => {
+  ensureDataFile();
+  const data = fs.readFileSync(DATA_FILE, 'utf8');
+  return JSON.parse(data || '[]');
+};
+
+const writeToFile = (blogs) => {
+  ensureDataFile();
+  fs.writeFileSync(DATA_FILE, JSON.stringify(blogs, null, 2));
+};
 
 module.exports = async (req, res) => {
   try {
-    const client = await clientPromise;
-    const db = client.db("mtcshopping");
-    const collection = db.collection("posts");
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
 
     if (req.method === 'GET') {
-      const posts = await collection.find({}).toArray();
-      return res.status(200).json(posts);
+      const blogs = readFromFile();
+      return res.status(200).json(blogs);
     }
 
     if (req.method === 'POST') {
-      const post = req.body;
-      let result;
-
-      if (post._id) {
-        try {
-          const _id = new ObjectId(post._id);
-          delete post._id;
-          result = await collection.updateOne({ _id: _id }, { $set: post });
-        } catch (oidError) {
-          // Fallback for legacy IDs
-          result = await collection.updateOne({ id: post._id }, { $set: post }, { upsert: true });
-        }
-      } else if (post.id) {
-        result = await collection.updateOne({ id: post.id }, { $set: post }, { upsert: true });
+      const blog = req.body;
+      let blogs = readFromFile();
+      
+      if (blog._id) {
+        const index = blogs.findIndex(b => b._id === blog._id);
+        if (index !== -1) blogs[index] = blog;
+        else blogs.push(blog);
       } else {
-        result = await collection.insertOne(post);
+        blog._id = Date.now().toString();
+        blogs.push(blog);
       }
-      return res.status(200).json(result);
+      
+      writeToFile(blogs);
+      return res.status(201).json(blog);
     }
 
     if (req.method === 'DELETE') {
-      const { id, _id } = req.query;
-      let result;
-      if (_id) {
-        try {
-          result = await collection.deleteOne({ _id: new ObjectId(_id) });
-        } catch (e) {
-          result = await collection.deleteOne({ id: _id });
-        }
-      } else if (id) {
-        result = await collection.deleteOne({ id: id });
-      }
-      return res.status(200).json(result);
+      const { id } = req.body;
+      let blogs = readFromFile();
+      blogs = blogs.filter(b => b._id !== id);
+      writeToFile(blogs);
+      return res.status(200).json({ success: true });
     }
 
-    res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error('Blogs API Error:', error);
     res.status(500).json({ error: 'Internal Server Error', message: error.message });
