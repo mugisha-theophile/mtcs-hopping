@@ -5241,6 +5241,343 @@
             direction: rtl;
             text-align: right;
         }
+
+        /* ============================================
+           RESPONSIVE FIXES — SMALL DEVICES
+           ============================================ */
+
+        /* Prevent horizontal overflow site-wide */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+
+        /* ── Header: keep everything inside viewport ── */
+        @media (max-width: 575.98px) {
+
+            /* Main header row — tighter spacing */
+            .header-main {
+                padding: 6px 0;
+            }
+
+            .header-main-inner {
+                gap: 6px;
+                flex-wrap: nowrap;
+                align-items: center;
+            }
+
+            /* Shrink logo on very small screens */
+            .header-logo img,
+            .header-logo-img {
+                height: 48px;
+            }
+
+            /* Squeeze header action buttons */
+            .header-actions {
+                gap: 0;
+                flex-shrink: 0;
+            }
+
+            .header-action-btn {
+                padding: 6px 7px;
+                font-size: 0.75rem;
+            }
+
+            .header-action-btn i {
+                font-size: 1rem;
+            }
+
+            /* Hide currency label text on tiny screens, keep icon */
+            #currentCurrencyLabel {
+                display: none !important;
+            }
+
+            /* Make lang button compact */
+            .lang-btn {
+                padding: 4px 6px;
+                font-size: 0.7rem;
+                gap: 2px;
+            }
+
+            /* Mobile toggle must not push outside */
+            .header-mobile-toggle {
+                width: 36px;
+                height: 36px;
+                font-size: 1.3rem;
+                flex-shrink: 0;
+            }
+
+            /* Cart badge positioning fix */
+            .header-cart-btn {
+                position: relative;
+            }
+
+            .header-cart-badge {
+                right: 2px;
+                top: 1px;
+                width: 14px;
+                height: 14px;
+                font-size: 0.55rem;
+            }
+
+            /* Sign-in button: hidden on xs to save space (already d-none d-sm-flex) */
+        }
+
+        /* ── Product cards: proper 2-column grid on small phones ── */
+        @media (max-width: 575.98px) {
+
+            /* Force 2 columns on xs */
+            #popular-products-grid,
+            #featured-products-grid,
+            #shop-grid-container {
+                --bs-gutter-x: 0.5rem;
+                --bs-gutter-y: 0.5rem;
+                row-gap: 14px !important;
+            }
+
+            /* Product card image: reduce height so card fits in 2-col */
+            .product-card-image-wrapper {
+                height: 100px;
+                margin-bottom: -14px;
+            }
+
+            .product-card-image {
+                height: 125%;
+            }
+
+            /* Card body padding */
+            .product-card-body {
+                padding: 20px 8px 10px;
+                gap: 2px;
+            }
+
+            .product-card-name {
+                font-size: 0.72rem;
+            }
+
+            .product-card-price {
+                font-size: 0.82rem;
+            }
+
+            /* Price row: stack if needed */
+            .product-card-price-row {
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-top: 6px;
+            }
+
+            /* Smaller action buttons */
+            .pc-icon-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.72rem;
+            }
+
+            .btn-add-cart-sm,
+            .btn-buy-now-sm {
+                font-size: 0.65rem;
+                padding: 5px 0;
+            }
+
+            .btn-view-details {
+                font-size: 0.68rem;
+                padding: 3px 0;
+            }
+
+            /* Social row buttons */
+            .pc-social-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 0.7rem;
+            }
+
+            /* Card border-radius reduced */
+            .product-card-link {
+                border-radius: 14px;
+            }
+
+            .product-card-body {
+                border-radius: 12px;
+            }
+        }
+
+        /* ── Hero section ── */
+        @media (max-width: 575.98px) {
+            .homepage-hero {
+                padding: 20px 0 24px;
+            }
+
+            .hero-title {
+                font-size: 1.4rem;
+            }
+
+            .hero-subtitle {
+                font-size: 0.82rem;
+                margin-bottom: 18px;
+            }
+
+            .hero-search {
+                max-width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .hero-search-btn {
+                padding: 8px 12px;
+                font-size: 0.75rem;
+            }
+
+            .hero-stats {
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .hero-stat-number {
+                font-size: 0.875rem;
+            }
+
+            .hero-stat-label {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* ── Trust bar: single column on xs ── */
+        @media (max-width: 480px) {
+            .trust-bar-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .trust-icon {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+
+            .trust-text strong {
+                font-size: 0.7rem;
+            }
+
+            .trust-text span {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* ── Section headers ── */
+        @media (max-width: 575.98px) {
+            .section-title {
+                font-size: 1.1rem;
+            }
+
+            .section-subtitle {
+                font-size: 0.78rem;
+            }
+        }
+
+        /* ── Toast: full width on xs ── */
+        @media (max-width: 575.98px) {
+            #toastContainer {
+                left: 12px;
+                right: 12px;
+                top: auto;
+                bottom: 80px;
+            }
+
+            .custom-toast {
+                min-width: unset;
+                width: 100%;
+            }
+        }
+
+        /* ── Shop toolbar: wrap on xs ── */
+        @media (max-width: 575.98px) {
+            .shop-toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .shop-filter-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* ── Stores grid: single col on xs ── */
+        @media (max-width: 575.98px) {
+            .stores-scroll {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── App CTA card ── */
+        @media (max-width: 575.98px) {
+            .app-cta-card {
+                padding: 20px 16px;
+            }
+
+            .app-cta-title {
+                font-size: 1.1rem;
+            }
+
+            .app-cta-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
+        /* ── Contact page ── */
+        @media (max-width: 575.98px) {
+            .contact-card-info,
+            .contact-form-wrapper {
+                padding: 20px 16px;
+            }
+
+            .contact-form-title {
+                font-size: 1.3rem;
+            }
+
+            .contact-hero {
+                padding: 80px 0 70px;
+            }
+
+            .contact-hero h1 {
+                font-size: 1.75rem;
+            }
+        }
+
+        /* ── Detail page ── */
+        @media (max-width: 575.98px) {
+            .detail-content-wrapper {
+                padding: 16px 12px;
+            }
+
+            #detail-title {
+                font-size: 1.25rem;
+            }
+
+            .detail-price {
+                font-size: 1.4rem;
+            }
+
+            .detail-thumbnails {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 4px;
+            }
+        }
+
+        /* ── Admin sidebar: hide on mobile, collapse ── */
+        @media (max-width: 767.98px) {
+            .admin-sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                top: 0;
+            }
+
+            .admin-layout {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 
